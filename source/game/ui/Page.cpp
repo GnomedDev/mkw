@@ -1,5 +1,10 @@
 #include "Page.hpp"
-#include "ControlGroup.hpp"
+
+#include "game/ui/SectionManager.hpp"
+
+extern "C" {
+#include "rvl/gx/gx.h"
+}
 
 // --- EXTERN DECLARATIONS BEGIN ---
 
@@ -10,6 +15,40 @@ extern "C" {
 extern UNKNOWN_FUNCTION(_savegpr_20);
 // PAL: 0x800215d0
 extern UNKNOWN_FUNCTION(_restgpr_20);
+// PAL: 0x805bb220
+extern UNKNOWN_FUNCTION(unk_805bb220);
+// PAL: 0x805bb224
+extern UNKNOWN_FUNCTION(unk_805bb224);
+// PAL: 0x805bb228
+extern UNKNOWN_FUNCTION(Page_onRefocus);
+// PAL: 0x805bb22c
+extern UNKNOWN_FUNCTION(unk_805bb22c);
+// PAL: 0x805bb230
+extern UNKNOWN_FUNCTION(Page_beforeCalc);
+// PAL: 0x805bb234
+extern UNKNOWN_FUNCTION(unk_805bb234);
+// PAL: 0x805bb238
+extern UNKNOWN_FUNCTION(unk_805bb238);
+// PAL: 0x805bb23c
+extern UNKNOWN_FUNCTION(unk_805bb23c);
+// PAL: 0x805bb240
+extern UNKNOWN_FUNCTION(unk_805bb240);
+// PAL: 0x805bb244
+extern UNKNOWN_FUNCTION(Page_onDeactivate);
+// PAL: 0x805bb248
+extern UNKNOWN_FUNCTION(Page_onFini);
+// PAL: 0x805bb24c
+extern UNKNOWN_FUNCTION(Page_vf_18);
+// PAL: 0x805bb254
+extern UNKNOWN_FUNCTION(Page_vf_14);
+// PAL: 0x805bb25c
+extern UNKNOWN_FUNCTION(Page_getName);
+// PAL: 0x805bb278
+extern UNKNOWN_FUNCTION(Page_getReplacement);
+// PAL: 0x805bed68
+extern UNKNOWN_FUNCTION(Page_getTypeInfo);
+// PAL: 0x805bf2d8
+extern UNKNOWN_FUNCTION(Page_afterCalc);
 // PAL: 0x805c23e4
 extern UNKNOWN_FUNCTION(__ct__Q22UI12ControlGroupFv);
 // PAL: 0x805c2400
@@ -26,20 +65,28 @@ extern UNKNOWN_FUNCTION(calc__Q22UI12ControlGroupFv);
 extern UNKNOWN_FUNCTION(draw__Q22UI12ControlGroupFi);
 // PAL: 0x805c2ad0
 extern UNKNOWN_FUNCTION(transform__Q22UI12ControlGroupFRQ32UI12ControlGroup7Functor);
+// PAL: 0x805c9888
+extern UNKNOWN_FUNCTION(Page_onActivate);
 // PAL: 0x805eed70
 extern UNKNOWN_FUNCTION(InputThing_activate);
 // PAL: 0x805f2100
 extern UNKNOWN_FUNCTION(unk_805f2100);
+// PAL: 0x80601a04
+extern UNKNOWN_FUNCTION(Page_destroy);
+// PAL: 0x80601ad8
+extern UNKNOWN_FUNCTION(Page_onInit);
+// PAL: 0x806024b0
+extern UNKNOWN_FUNCTION(changeSection__Q22UI4PageFllf);
+// PAL: 0x80602530
+extern UNKNOWN_FUNCTION(unk_80602530);
+// PAL: 0x806025b0
+extern UNKNOWN_FUNCTION(Page_push);
 // PAL: 0x8060265c
 extern UNKNOWN_FUNCTION(unk_8060265c);
 // PAL: 0x80602b04
 extern UNKNOWN_FUNCTION(unk_80602b04);
 // PAL: 0x80622e00
 extern UNKNOWN_FUNCTION(Section_activatePage);
-// PAL: 0x80635a3c
-extern UNKNOWN_FUNCTION(SectionManager_setNextSection);
-// PAL: 0x80635ac8
-extern UNKNOWN_FUNCTION(SectionManager_startChangeSection);
 // PAL: 0x80635b2c
 extern UNKNOWN_FUNCTION(SectionManager_startReinit);
 // PAL: 0x8063d0b8
@@ -62,8 +109,6 @@ extern UNKNOWN_DATA(lbl_80896824);
 extern UNKNOWN_DATA(lbl_80896828);
 // PAL: 0x80896838
 extern UNKNOWN_DATA(lbl_80896838);
-// PAL: 0x808ba5c0
-extern UNKNOWN_DATA(lbl_808ba5c0);
 // PAL: 0x808ba624
 extern UNKNOWN_DATA(lbl_808ba624);
 // PAL: 0x808ba630
@@ -74,6 +119,7 @@ extern UNKNOWN_DATA(lbl_808ba63c);
 extern UNKNOWN_DATA(lbl_809c1c90);
 // PAL: 0x809c1e38
 extern UNKNOWN_DATA(lbl_809c1e38);
+extern UNKNOWN_DATA(s_instance__14SectionManager);
 }
 
 // --- EXTERN DECLARATIONS END ---
@@ -81,7 +127,17 @@ extern UNKNOWN_DATA(lbl_809c1e38);
 // .rodata
 
 // .data
-
+#pragma explicit_zero_data on
+u32 lbl_808ba5c0[] = {
+    0x00000000, 0x00000000, (u32)&Page_destroy, (u32)&Page_getName,
+    (u32)&Page_getReplacement, (u32)&Page_vf_14, (u32)&Page_vf_18, (u32)&changeSection__Q22UI4PageFllf,
+    (u32)&unk_80602530, (u32)&Page_push, (u32)&Page_onInit, (u32)&Page_onFini,
+    (u32)&Page_onActivate, (u32)&Page_onDeactivate, (u32)&unk_805bb240, (u32)&unk_805bb23c,
+    (u32)&unk_805bb238, (u32)&unk_805bb234, (u32)&Page_beforeCalc, (u32)&Page_afterCalc,
+    (u32)&unk_805bb22c, (u32)&Page_onRefocus, (u32)&unk_805bb224, (u32)&unk_805bb220,
+    (u32)&Page_getTypeInfo
+};
+#pragma explicit_zero_data off
 
 // .bss
 
@@ -251,22 +307,23 @@ void Page::skipInAnimation(void) {
 }
 
 void Page::startReplace(s32 animationDirection, f32 delay) {
-  setAnimationDirection(animationDirection);
-  mAnimationDelay = delay;
-  mNextStateRequested = true;
+    if (animationDirection != -1) {
+        mAnimationDirection = animationDirection;
+    }
+    mAnimationDelay = delay;
+    mNextStateRequested = true;
 }
 
 void Page::skipOutAnimation(void) {
     mNextStateRequested = true;
 }
 
+void Page::changeSection(s32 sectionId, s32 animationDirection, f32 delay) {
+    SectionManager::Instance()->setNextSection(sectionId, animationDirection);
+    startReplace(animationDirection, delay);
+    SectionManager::Instance()->startChangeSection(delay, 0xff);
 }
 
-// Symbol: Page_changeSection
-// PAL: 0x806024b0..0x80602530
-MARK_BINARY_BLOB(Page_changeSection, 0x806024b0, 0x80602530);
-asm UNKNOWN_FUNCTION(Page_changeSection) {
-  #include "asm/806024b0.s"
 }
 
 // Symbol: unk_80602530

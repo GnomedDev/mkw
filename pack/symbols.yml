@@ -14620,7 +14620,7 @@ global:
     0x8060247c: 'skipInAnimation__Q22UI4PageFv'
     0x80602488: 'startReplace__Q22UI4PageFlf'
     0x806024a4: 'skipOutAnimation__Q22UI4PageFv'
-    0x806024b0: 'Page_changeSection'
+    0x806024b0: 'changeSection__Q22UI4PageFllf'
     0x80602530: 'unk_80602530'
     0x806025b0: 'Page_push'
     0x8060265c: 'unk_8060265c'
@@ -26433,3 +26433,4 @@ global:
     0x809bd740: 'spInstance__Q26System9InitScene'
     0x809c1900: 'sList__Q24Kart15KartObjectProxy'
     0x809c190c: 'bss_809c190c'
+    0x809c1e38: 's_instance__14SectionManager'

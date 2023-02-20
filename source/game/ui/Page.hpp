@@ -61,7 +61,7 @@ UNKNOWN_FUNCTION(startReplace__Q22UI4PageFlf);
 // PAL: 0x806024a4..0x806024b0
 UNKNOWN_FUNCTION(skipOutAnimation__Q22UI4PageFv);
 // PAL: 0x806024b0..0x80602530
-UNKNOWN_FUNCTION(Page_changeSection);
+UNKNOWN_FUNCTION(changeSection__Q22UI4PageFllf);
 // PAL: 0x80602530..0x806025b0
 UNKNOWN_FUNCTION(unk_80602530);
 // PAL: 0x806025b0..0x8060265c
@@ -116,6 +116,7 @@ public:
   void skipInAnimation(void);
   void startReplace(s32 animationDirection, f32 delay);
   void skipOutAnimation(void);
+  void changeSection(s32 sectionId, s32 animationDirection, f32 delay);
 
 private:
   s32 mId;
